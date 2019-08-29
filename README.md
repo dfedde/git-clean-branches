@@ -7,6 +7,6 @@ remove all branches that are no longer on the origin remote and are merged into 
 ```
 $ git clean-branches origin
 ```
-# Instillation
+# Installation
 
 Place `git-clean-branches` anywhere in you path.
