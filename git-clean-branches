@@ -1,0 +1,45 @@
+#!/bin/bash
+
+valid_remote(){
+	local remote=$1
+	git remote -v | grep --quiet $remote && return 0 || return 1
+}
+
+gone_branches(){
+  local remote=$1
+  git branch -vv | grep "$remote/.*: gone]" | awk '{print $1}'
+}
+
+remote=$1
+delete_flag='-d'
+dryrun=1
+
+while getopts ":fd" opt; do
+  case ${opt} in
+    f )  delete_flag='-D'
+      ;;
+    d )  dry_run=0
+      ;;
+    \? ) echo "Usage: git clean-branches [-f]"
+      ;;
+  esac
+done
+
+if [ -z $remote ]; then
+	echo "no remote given defaulting to origin"
+	remote='origin'
+fi
+
+if ! valid_remote $remote; then
+	echo "remote $remote is not listed in `git remote -v`"
+	exit 1
+fi
+
+if $dry_run; then
+  echo $(gone_branches) 
+  exit
+fi
+
+for branch in $(gone_branches); do
+  git branch $delete_flag $branch
+done
