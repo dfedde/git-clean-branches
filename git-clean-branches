@@ -1,45 +1,57 @@
-#!/bin/bash
+#!/bin/bash -e
 
 valid_remote(){
 	local remote=$1
-	git remote -v | grep --quiet $remote && return 0 || return 1
+	git remote -v | grep --q "^$remote" && return 0 || return 1
 }
 
 gone_branches(){
-  local remote=$1
-  git branch -vv | grep "$remote/.*: gone]" | awk '{print $1}'
+	local remote=$1
+	git branch -vv | sed "s/^\*//"| grep "$remote/.*: gone]" | awk '{print $1}'
 }
 
-remote=$1
+help_text(){
+	echo "Checks what branches have be removed from the given remote"
+	echo "and deletes them."
+	echo
+	echo "Usage: git clean-branches [-f] [-d] [remote]"
+	echo "  -f  force deletes of the branches"
+	echo "  -d  dry-run only list the branches to be deleted"
+}
+
 delete_flag='-d'
-dryrun=1
 
 while getopts ":fd" opt; do
-  case ${opt} in
-    f )  delete_flag='-D'
-      ;;
-    d )  dry_run=0
-      ;;
-    \? ) echo "Usage: git clean-branches [-f]"
-      ;;
-  esac
+	case ${opt} in
+		f )  delete_flag='-D'
+			;;
+		d )  dry_run='true'
+			;;
+		\? )
+			help_text >&2 
+			exit 1
+			;;
+	esac
 done
+shift $((OPTIND -1))
 
-if [ -z $remote ]; then
-	echo "no remote given defaulting to origin"
+remote=$1
+
+if [ -z "$remote" ]; then
+	echo "no remote given defaulting to origin" >&2
 	remote='origin'
 fi
 
 if ! valid_remote $remote; then
-	echo "remote $remote is not listed in `git remote -v`"
+	echo "remote $remote is not listed in \`git remote -v\`" >&2
 	exit 1
 fi
 
-if $dry_run; then
-  echo $(gone_branches) 
-  exit
+if [ "$dry_run" == 'true' ]; then
+	gone_branches $remote
+	exit
 fi
 
-for branch in $(gone_branches); do
-  git branch $delete_flag $branch
+for branch in $(gone_branches $remote); do
+	git branch $delete_flag "$branch"
 done
