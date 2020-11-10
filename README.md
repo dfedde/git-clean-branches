@@ -1,6 +1,6 @@
 # Git clean-branches
 
-This will remove any branches that where tracking a remote branch that have been removed.
+This will remove any branches that where tracking a remote branch that have been removed from the remote.
 
 # Usage
 remove all branches that are no longer on the origin remote and are merged into the current branch
